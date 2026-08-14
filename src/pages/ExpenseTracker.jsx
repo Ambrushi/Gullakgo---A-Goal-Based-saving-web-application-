@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useApp } from '../context/AppContext';
 
@@ -62,72 +63,89 @@ export default function ExpenseTracker() {
           <h2 className="brand-font mb-0 text-dark">Daily Expense Tracker 💸</h2>
           <p className="text-secondary small mb-0">Track where your money goes in Indian Rupees (₹) to stay on budget!</p>
         </div>
-        <button
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           className="btn btn-stash-primary d-inline-flex align-items-center gap-2"
           onClick={() => setShowAddForm(!showAddForm)}
         >
           <i className={`bi ${showAddForm ? 'bi-x-lg' : 'bi-plus-lg'}`}></i>
           {showAddForm ? 'Close' : 'Log Expense'}
-        </button>
+        </motion.button>
       </div>
 
       {/* Log Expense Form Box (Collapsible / Toggleable) */}
-      {showAddForm && (
-        <div className="stash-card p-4 mb-4 border-purple" style={{ borderColor: '#8B5CF6' }}>
-          <h5 className="brand-font mb-3 text-dark">Add New Expense Item 🛒</h5>
-          <form onSubmit={handleSubmit}>
-            <div className="row g-3">
-              <div className="col-12 col-md-5">
-                <label className="form-label text-secondary small fw-semibold">Item Title</label>
-                <input
-                  type="text"
-                  className="form-control rounded-3"
-                  placeholder="e.g. Samosa & Cold Coffee"
-                  value={title}
-                  onChange={e => setTitle(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="col-6 col-md-3">
-                <label className="form-label text-secondary small fw-semibold">Amount (₹)</label>
-                <input
-                  type="number"
-                  step="1"
-                  min="1"
-                  className="form-control rounded-3"
-                  placeholder="150"
-                  value={amount}
-                  onChange={e => setAmount(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="col-6 col-md-4">
-                <label className="form-label text-secondary small fw-semibold">Category</label>
-                <select
-                  className="form-select rounded-3"
-                  value={category}
-                  onChange={e => setCategory(e.target.value)}
-                >
-                  {categories.map(c => (
-                    <option key={c.label} value={c.label}>{c.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="col-12 text-end">
-                <button type="submit" className="btn btn-stash-primary px-4">
-                  Save Expense
-                </button>
-              </div>
+      <AnimatePresence>
+        {showAddForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden mb-4"
+          >
+            <div className="stash-card p-4 border-purple" style={{ borderColor: '#8B5CF6' }}>
+              <h5 className="brand-font mb-3 text-dark">Add New Expense Item 🛒</h5>
+              <form onSubmit={handleSubmit}>
+                <div className="row g-3">
+                  <div className="col-12 col-md-5">
+                    <label className="form-label text-secondary small fw-semibold">Item Title</label>
+                    <input
+                      type="text"
+                      className="form-control rounded-3"
+                      placeholder="e.g. Samosa & Cold Coffee"
+                      value={title}
+                      onChange={e => setTitle(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="col-6 col-md-3">
+                    <label className="form-label text-secondary small fw-semibold">Amount (₹)</label>
+                    <input
+                      type="number"
+                      step="1"
+                      min="1"
+                      className="form-control rounded-3"
+                      placeholder="150"
+                      value={amount}
+                      onChange={e => setAmount(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="col-6 col-md-4">
+                    <label className="form-label text-secondary small fw-semibold">Category</label>
+                    <select
+                      className="form-select rounded-3"
+                      value={category}
+                      onChange={e => setCategory(e.target.value)}
+                    >
+                      {categories.map(c => (
+                        <option key={c.label} value={c.label}>{c.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-12 text-end">
+                    <motion.button 
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.96 }}
+                      type="submit" 
+                      className="btn btn-stash-primary px-4"
+                    >
+                      Save Expense
+                    </motion.button>
+                  </div>
+                </div>
+              </form>
             </div>
-          </form>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Spending Breakdown & Chart Section */}
       <div className="row g-4 mb-4">
         {/* Total Summary Card */}
         <div className="col-12 col-md-5">
-          <div className="stash-card p-4 h-100 d-flex flex-column justify-content-between">
+          <motion.div initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} className="stash-card p-4 h-100 d-flex flex-column justify-content-between">
             <div>
               <span className="badge bg-danger-subtle text-danger px-3 py-1 rounded-pill fw-bold mb-2">
                 Monthly Spending
@@ -147,12 +165,12 @@ export default function ExpenseTracker() {
                 You've spent wisely this month! Remember: saving 20% of your allowance accelerates your goals! 🎯
               </p>
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Category Breakdown Recharts Pie Chart */}
         <div className="col-12 col-md-7">
-          <div className="stash-card p-4 h-100 text-center">
+          <motion.div initial={{ opacity: 0, x: 15 }} animate={{ opacity: 1, x: 0 }} className="stash-card p-4 h-100 text-center">
             <h5 className="brand-font mb-3 text-dark text-start">Spending Breakdown</h5>
             {chartData.length === 0 ? (
               <p className="text-muted py-4">No expenses recorded yet.</p>
@@ -179,38 +197,48 @@ export default function ExpenseTracker() {
                 </ResponsiveContainer>
               </div>
             )}
-          </div>
+          </motion.div>
         </div>
       </div>
 
       {/* Expense History List */}
-      <div className="stash-card p-4">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="stash-card p-4">
         <h5 className="brand-font mb-3 text-dark">Recent Expense Logs</h5>
 
         {expenses.length === 0 ? (
           <p className="text-muted text-center py-3">No expenses logged yet.</p>
         ) : (
           <div className="d-flex flex-column gap-2">
-            {expenses.map(exp => (
-              <div key={exp.id} className="d-flex align-items-center justify-content-between p-3 rounded-4 bg-light">
-                <div className="d-flex align-items-center gap-3">
-                  <div 
-                    className="rounded-circle p-2 d-flex align-items-center justify-content-center text-purple bg-white shadow-sm"
-                    style={{ width: '42px', height: '42px', color: '#8B5CF6' }}
-                  >
-                    <i className={`bi ${exp.icon} fs-5`}></i>
+            <AnimatePresence>
+              {expenses.map((exp, idx) => (
+                <motion.div 
+                  key={exp.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className="d-flex align-items-center justify-content-between p-3 rounded-4 bg-light"
+                >
+                  <div className="d-flex align-items-center gap-3">
+                    <div 
+                      className="rounded-circle p-2 d-flex align-items-center justify-content-center text-purple bg-white shadow-sm"
+                      style={{ width: '42px', height: '42px', color: '#8B5CF6' }}
+                    >
+                      <i className={`bi ${exp.icon} fs-5`}></i>
+                    </div>
+                    <div>
+                      <div className="fw-bold text-dark">{exp.title}</div>
+                      <div className="text-muted small">{exp.category} • {exp.date}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="fw-bold text-dark">{exp.title}</div>
-                    <div className="text-muted small">{exp.category} • {exp.date}</div>
-                  </div>
-                </div>
-                <span className="fw-bold text-danger fs-6">-₹{exp.amount.toLocaleString('en-IN')}</span>
-              </div>
-            ))}
+                  <span className="fw-bold text-danger fs-6">-₹{exp.amount.toLocaleString('en-IN')}</span>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }
+

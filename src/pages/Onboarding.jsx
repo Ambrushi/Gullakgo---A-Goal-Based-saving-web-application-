@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '../context/AppContext';
 
 export default function Onboarding() {
@@ -64,7 +65,13 @@ export default function Onboarding() {
 
   return (
     <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light p-3">
-      <div className="stash-card p-4 p-md-5 w-100" style={{ maxWidth: '500px' }}>
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4 }}
+        className="stash-card p-4 p-md-5 w-100 overflow-hidden" 
+        style={{ maxWidth: '500px' }}
+      >
         
         {/* Progress Dots */}
         <div className="d-flex justify-content-between align-items-center mb-4">
@@ -73,14 +80,13 @@ export default function Onboarding() {
           </span>
           <div className="d-flex gap-1">
             {slides.map((_, idx) => (
-              <div
+              <motion.div
                 key={idx}
-                className="rounded-pill transition-all"
+                animate={{ width: idx === step ? 24 : 8 }}
+                className="rounded-pill"
                 style={{
-                  width: idx === step ? '24px' : '8px',
                   height: '8px',
-                  backgroundColor: idx === step ? '#8B5CF6' : '#E2E8F0',
-                  transition: 'all 0.3s ease'
+                  backgroundColor: idx === step ? '#8B5CF6' : '#E2E8F0'
                 }}
               />
             ))}
@@ -88,15 +94,22 @@ export default function Onboarding() {
         </div>
 
         {/* Slide Graphic */}
-        <div 
-          className="rounded-4 p-4 text-center text-white mb-4 d-flex flex-column align-items-center justify-content-center"
-          style={{ background: slides[step].color, minHeight: '160px' }}
-        >
-          <div className="display-3 mb-2">
-            <i className={`bi ${slides[step].icon}`}></i>
-          </div>
-          <h3 className="brand-font mb-0 text-white">{slides[step].title}</h3>
-        </div>
+        <AnimatePresence mode="wait">
+          <motion.div 
+            key={step}
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -30 }}
+            transition={{ duration: 0.3 }}
+            className="rounded-4 p-4 text-center text-white mb-4 d-flex flex-column align-items-center justify-content-center shadow-sm"
+            style={{ background: slides[step].color, minHeight: '160px' }}
+          >
+            <div className="display-3 mb-2 animate-float">
+              <i className={`bi ${slides[step].icon}`}></i>
+            </div>
+            <h3 className="brand-font mb-0 text-white">{slides[step].title}</h3>
+          </motion.div>
+        </AnimatePresence>
 
         {/* Slide Content */}
         {step < 2 ? (
@@ -110,9 +123,14 @@ export default function Onboarding() {
                   Back
                 </button>
               )}
-              <button className="btn btn-stash-primary flex-grow-1" onClick={handleNext}>
+              <motion.button 
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.96 }}
+                className="btn btn-stash-primary flex-grow-1" 
+                onClick={handleNext}
+              >
                 Next <i className="bi bi-arrow-right ms-1"></i>
-              </button>
+              </motion.button>
             </div>
           </div>
         ) : (
@@ -161,46 +179,59 @@ export default function Onboarding() {
                 />
               </div>
 
-              {linkParent && (
-                <div className="mt-3 pt-3 border-top">
-                  <p className="small text-muted mb-2">
-                    Linking a guardian lets them sponsor match contributions or send rewards! 🎁
-                  </p>
-                  <div className="mb-2">
-                    <input
-                      type="text"
-                      className="form-control form-control-sm rounded-3"
-                      placeholder="Parent/Guardian Full Name"
-                      value={parentName}
-                      onChange={e => setParentName(e.target.value)}
-                      required={linkParent}
-                    />
-                  </div>
-                  <div>
-                    <input
-                      type="email"
-                      className="form-control form-control-sm rounded-3"
-                      placeholder="Parent Email Address"
-                      value={parentEmail}
-                      onChange={e => setParentEmail(e.target.value)}
-                      required={linkParent}
-                    />
-                  </div>
-                </div>
-              )}
+              <AnimatePresence>
+                {linkParent && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-3 pt-3 border-top overflow-hidden"
+                  >
+                    <p className="small text-muted mb-2">
+                      Linking a guardian lets them sponsor match contributions or send rewards! 🎁
+                    </p>
+                    <div className="mb-2">
+                      <input
+                        type="text"
+                        className="form-control form-control-sm rounded-3"
+                        placeholder="Parent/Guardian Full Name"
+                        value={parentName}
+                        onChange={e => setParentName(e.target.value)}
+                        required={linkParent}
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="email"
+                        className="form-control form-control-sm rounded-3"
+                        placeholder="Parent Email Address"
+                        value={parentEmail}
+                        onChange={e => setParentEmail(e.target.value)}
+                        required={linkParent}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             <div className="d-flex gap-2">
               <button type="button" className="btn btn-stash-secondary" onClick={handlePrev}>
                 Back
               </button>
-              <button type="submit" className="btn btn-stash-primary flex-grow-1">
+              <motion.button 
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.96 }}
+                type="submit" 
+                className="btn btn-stash-primary flex-grow-1"
+              >
                 Start Saving Now 🎉
-              </button>
+              </motion.button>
             </div>
           </form>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }
+

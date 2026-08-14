@@ -11,6 +11,7 @@ const initialGoals = [
     targetAmount: 45000,
     currentAmount: 32000,
     targetDate: '2026-10-15',
+    dailySavingRate: 215,
     streak: 8,
     lockIn: true,
     status: 'active',
@@ -29,6 +30,7 @@ const initialGoals = [
     targetAmount: 1200,
     currentAmount: 950,
     targetDate: '2026-08-10',
+    dailySavingRate: 50,
     streak: 5,
     lockIn: false,
     status: 'active',
@@ -45,6 +47,7 @@ const initialGoals = [
     targetAmount: 11999,
     currentAmount: 6500,
     targetDate: '2026-11-20',
+    dailySavingRate: 55,
     streak: 4,
     lockIn: true,
     status: 'active',
@@ -61,6 +64,7 @@ const initialGoals = [
     targetAmount: 2499,
     currentAmount: 2499,
     targetDate: '2026-06-01',
+    dailySavingRate: 35,
     streak: 14,
     lockIn: false,
     status: 'completed',
@@ -135,6 +139,43 @@ export const AppProvider = ({ children }) => {
     parentLinked: true,
     parentName: 'Rajesh Sharma (Dad)',
     parentEmail: 'rajesh.sharma@example.com'
+  });
+
+  const [bankAccount, setBankAccount] = useState(() => {
+    const saved = localStorage.getItem('gullak_bank_account');
+    return saved ? JSON.parse(saved) : {
+      upiId: 'aarav@okaxis',
+      bankName: 'HDFC Bank',
+      accountNumber: '••••••••4892',
+      ifscCode: 'HDFC0001234',
+      accountHolder: 'Aarav Sharma'
+    };
+  });
+
+  const [paymentHistory, setPaymentHistory] = useState(() => {
+    const saved = localStorage.getItem('gullak_payment_history');
+    return saved ? JSON.parse(saved) : [
+      {
+        id: 'tx_101',
+        utr: 'UPI/628491038472',
+        date: '2026-08-01',
+        type: 'Subscription',
+        description: 'Weekly Saver Plan Upgrade',
+        amount: 49,
+        status: 'SUCCESS',
+        app: 'Google Pay'
+      },
+      {
+        id: 'tx_102',
+        utr: 'UPI/628491039821',
+        date: '2026-08-02',
+        type: 'Goal Deposit',
+        description: 'PlayStation 5 Gullak Deposit',
+        amount: 2000,
+        status: 'SUCCESS',
+        app: 'PhonePe'
+      }
+    ];
   });
 
   const [goals, setGoals] = useState(initialGoals);
@@ -340,16 +381,51 @@ export const AppProvider = ({ children }) => {
     setIsAuthenticated(true);
   };
 
+  const calculateDailySavingRate = (targetAmount, currentAmount = 0, targetDateStr) => {
+    if (!targetAmount || !targetDateStr) return 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(targetDateStr);
+    target.setHours(0, 0, 0, 0);
+    const diffTime = target - today;
+    const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+    const needed = Math.max(0, parseFloat(targetAmount) - parseFloat(currentAmount));
+    return Math.ceil(needed / diffDays);
+  };
+
   const addGoal = (newGoal) => {
+    const calculatedRate = calculateDailySavingRate(newGoal.targetAmount, 0, newGoal.targetDate);
     const goalWithId = {
       ...newGoal,
       id: Date.now().toString(),
       currentAmount: 0,
+      dailySavingRate: newGoal.dailySavingRate ? parseFloat(newGoal.dailySavingRate) : calculatedRate,
       streak: 1,
       status: 'active',
       contributions: []
     };
     setGoals(prev => [goalWithId, ...prev]);
+  };
+
+  const updateGoal = (goalId, updatedFields) => {
+    setGoals(prevGoals =>
+      prevGoals.map(goal => {
+        if (goal.id === goalId) {
+          const updated = { ...goal, ...updatedFields };
+          if (updated.targetAmount && updated.currentAmount >= updated.targetAmount) {
+            updated.status = 'completed';
+          } else if (updated.status === 'completed' && updated.targetAmount && updated.currentAmount < updated.targetAmount) {
+            updated.status = 'active';
+          }
+          return updated;
+        }
+        return goal;
+      })
+    );
+  };
+
+  const deleteGoal = (goalId) => {
+    setGoals(prev => prev.filter(g => g.id !== goalId));
   };
 
   const addContribution = (goalId, amount, note = 'Daily Streak Contribution 🔥') => {
@@ -408,6 +484,30 @@ export const AppProvider = ({ children }) => {
     }));
   };
 
+  const updateBankAccountDetails = (details) => {
+    setBankAccount(prev => {
+      const updated = { ...prev, ...details };
+      localStorage.setItem('gullak_bank_account', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const recordPayment = (tx) => {
+    const newTx = {
+      id: 'tx_' + Date.now(),
+      utr: tx.utr || 'UPI/' + Math.floor(100000000000 + Math.random() * 900000000000),
+      date: new Date().toISOString().split('T')[0],
+      status: 'SUCCESS',
+      ...tx
+    };
+    setPaymentHistory(prev => {
+      const updated = [newTx, ...prev];
+      localStorage.setItem('gullak_payment_history', JSON.stringify(updated));
+      return updated;
+    });
+    return newTx;
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -422,7 +522,14 @@ export const AppProvider = ({ children }) => {
         user,
         goals,
         expenses,
+        bankAccount,
+        paymentHistory,
+        updateBankAccountDetails,
+        recordPayment,
         addGoal,
+        updateGoal,
+        deleteGoal,
+        calculateDailySavingRate,
         addContribution,
         addExpense,
         toggleParentLink,

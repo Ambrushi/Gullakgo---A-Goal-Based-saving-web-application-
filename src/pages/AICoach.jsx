@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '../context/AppContext';
 import SubscriptionModal from '../components/SubscriptionModal';
 
@@ -90,7 +91,7 @@ Instructions:
 
       const fullPrompt = `${systemPrompt}\n\nRecent Conversation History:\n${historyStr}\n\nUser Question: ${userQuery}\n\nCoach Answer:`;
 
-      // Free Tier Gemini Models array (falls back sequentially if one is busy/rate-limited)
+      // Free Tier Gemini Models array
       const modelsToTry = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash-8b'];
       let lastErrorMsg = '';
       let isRateLimited = false;
@@ -126,7 +127,7 @@ Instructions:
               lastErrorMsg = `Gemini API (${model}) Error ${response.status}: ${apiErrMsg}`;
             }
             console.warn(lastErrorMsg);
-            continue; // try next model
+            continue;
           }
 
           const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -138,7 +139,6 @@ Instructions:
         }
       }
 
-      // Format user-friendly error banner
       const userFriendlyError = isRateLimited
         ? `⚡ **Gemini API Rate Limit / Quota Exceeded**\nYour Google Gemini API Key has hit its temporary rate limit (Error 429). Please wait ~45 seconds before trying again, or enter a new API Key.`
         : `⚠️ **Gemini API Error:**\n\`${lastErrorMsg}\`\n\nPlease check your API key in your \`.env\` file or click **🔑 Add Gemini Key** to update it.`;
@@ -171,7 +171,7 @@ Instructions:
       if (activeGoals.length > 0) {
         const goalsBreakdown = activeGoals.map(g => {
           const remaining = Math.max(0, g.targetAmount - g.currentAmount);
-          const weeklyNeed = Math.ceil(remaining / 4); // target over 4 weeks
+          const weeklyNeed = Math.ceil(remaining / 4);
           return `• **${g.title}**: Save **₹${weeklyNeed.toLocaleString('en-IN')}/week** (Saved: ₹${g.currentAmount.toLocaleString('en-IN')} / Target: ₹${g.targetAmount.toLocaleString('en-IN')})`;
         }).join('\n');
 
@@ -221,14 +221,12 @@ Instructions:
     const text = textToSend || input;
     if (!text.trim()) return;
 
-    // Check prompt restriction
     if (!canSendAIPrompt()) {
       setIsLimitReachedModal(true);
       setShowSubModal(true);
       return;
     }
 
-    // Deduct / increment prompt count
     incrementAIUsage();
 
     const userMsg = {
@@ -263,10 +261,14 @@ Instructions:
     <div className="container py-4" style={{ maxWidth: '850px' }}>
       
       {/* Header & Usage Bar */}
-      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 p-3 rounded-4 bg-white shadow-sm border">
+      <motion.div 
+        initial={{ opacity: 0, y: -15 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 p-3 rounded-4 bg-white shadow-sm border"
+      >
         <div className="d-flex align-items-center gap-3">
           <div 
-            className="rounded-circle p-3 d-flex align-items-center justify-content-center text-white flex-shrink-0 shadow"
+            className="rounded-circle p-3 d-flex align-items-center justify-content-center text-white flex-shrink-0 shadow animate-float"
             style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)', width: '52px', height: '52px', fontSize: '1.7rem' }}
           >
             🤖
@@ -302,7 +304,9 @@ Instructions:
             <span className="fw-bold">{usageInfo.remaining} / {usageInfo.limit}</span>
           </div>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             className="btn btn-sm text-white fw-bold rounded-pill px-3 py-1 shadow-sm"
             style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)' }}
             onClick={() => {
@@ -311,34 +315,41 @@ Instructions:
             }}
           >
             Upgrade Plan 🚀
-          </button>
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Gemini API Key Collapsible Drawer */}
-      {showKeyDrawer && (
-        <div className="p-3 mb-4 bg-purple-subtle border border-purple rounded-4 style-key-drawer">
-          <div className="d-flex align-items-center justify-content-between mb-2">
-            <h6 className="fw-bold mb-0">⚙️ Gemini API Configuration</h6>
-            <button className="btn-close btn-sm" onClick={() => setShowKeyDrawer(false)}></button>
-          </div>
-          <p className="small text-muted mb-2">
-            Enter your Google Gemini API key to enable live AI generated answers directly from Gemini 1.5 Flash. If blank, our smart Gullak Coach logic will answer.
-          </p>
-          <div className="input-group">
-            <input
-              type="password"
-              className="form-control rounded-start-pill border"
-              placeholder="AIzaSy..."
-              value={tempKeyInput}
-              onChange={e => setTempKeyInput(e.target.value)}
-            />
-            <button className="btn btn-purple text-white rounded-end-pill px-4" onClick={handleSaveApiKey} style={{ backgroundColor: '#8B5CF6' }}>
-              Save Key
-            </button>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {showKeyDrawer && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="p-3 mb-4 bg-purple-subtle border border-purple rounded-4 style-key-drawer overflow-hidden"
+          >
+            <div className="d-flex align-items-center justify-content-between mb-2">
+              <h6 className="fw-bold mb-0">⚙️ Gemini API Configuration</h6>
+              <button className="btn-close btn-sm" onClick={() => setShowKeyDrawer(false)}></button>
+            </div>
+            <p className="small text-muted mb-2">
+              Enter your Google Gemini API key to enable live AI generated answers directly from Gemini 1.5 Flash. If blank, our smart Gullak Coach logic will answer.
+            </p>
+            <div className="input-group">
+              <input
+                type="password"
+                className="form-control rounded-start-pill border"
+                placeholder="AIzaSy..."
+                value={tempKeyInput}
+                onChange={e => setTempKeyInput(e.target.value)}
+              />
+              <button className="btn btn-purple text-white rounded-end-pill px-4" onClick={handleSaveApiKey} style={{ backgroundColor: '#8B5CF6' }}>
+                Save Key
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Limit Warning Banner when 0 prompts left */}
       {usageInfo.remaining === 0 && (
@@ -363,40 +374,45 @@ Instructions:
       )}
 
       {/* Chat Container */}
-      <div className="stash-card d-flex flex-column" style={{ height: '540px' }}>
+      <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="stash-card d-flex flex-column" style={{ height: '540px' }}>
         {/* Messages Body */}
         <div className="flex-grow-1 p-3 p-md-4 overflow-y-auto custom-chat-scroll d-flex flex-column gap-3">
-          {messages.map(msg => (
-            <div
-              key={msg.id}
-              className={`d-flex gap-2 ${msg.sender === 'user' ? 'justify-content-end' : 'justify-content-start'}`}
-            >
-              {msg.sender === 'ai' && (
-                <div className="rounded-circle p-2 text-white d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '36px', height: '36px', backgroundColor: '#8B5CF6' }}>
-                  🤖
-                </div>
-              )}
-              <div 
-                className={`p-3 rounded-4 style-msg ${msg.sender === 'user' ? 'bg-purple text-white' : 'bg-light text-dark border'}`}
-                style={{
-                  maxWidth: '82%',
-                  backgroundColor: msg.sender === 'user' ? '#8B5CF6' : undefined,
-                  whiteSpace: 'pre-line'
-                }}
+          <AnimatePresence>
+            {messages.map(msg => (
+              <motion.div
+                key={msg.id}
+                initial={{ opacity: 0, y: 15, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.25 }}
+                className={`d-flex gap-2 ${msg.sender === 'user' ? 'justify-content-end' : 'justify-content-start'}`}
               >
-                <div className="fw-normal small">{msg.text}</div>
-                <div className={`text-end mt-1 ${msg.sender === 'user' ? 'text-white-50' : 'text-muted'}`} style={{ fontSize: '0.7rem' }}>
-                  {msg.timestamp}
+                {msg.sender === 'ai' && (
+                  <div className="rounded-circle p-2 text-white d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '36px', height: '36px', backgroundColor: '#8B5CF6' }}>
+                    🤖
+                  </div>
+                )}
+                <div 
+                  className={`p-3 rounded-4 style-msg ${msg.sender === 'user' ? 'bg-purple text-white' : 'bg-light text-dark border'}`}
+                  style={{
+                    maxWidth: '82%',
+                    backgroundColor: msg.sender === 'user' ? '#8B5CF6' : undefined,
+                    whiteSpace: 'pre-line'
+                  }}
+                >
+                  <div className="fw-normal small">{msg.text}</div>
+                  <div className={`text-end mt-1 ${msg.sender === 'user' ? 'text-white-50' : 'text-muted'}`} style={{ fontSize: '0.7rem' }}>
+                    {msg.timestamp}
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              </motion.div>
+            ))}
+          </AnimatePresence>
 
           {isTyping && (
-            <div className="d-flex align-items-center gap-2 text-muted small p-2">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="d-flex align-items-center gap-2 text-muted small p-2">
               <div className="spinner-grow spinner-grow-sm text-purple" role="status" style={{ color: '#8B5CF6' }}></div>
               <span>GullakGo AI Coach (Gemini API) is thinking & typing...</span>
-            </div>
+            </motion.div>
           )}
           <div ref={chatEndRef} />
         </div>
@@ -404,14 +420,16 @@ Instructions:
         {/* Suggested Quick Questions */}
         <div className="px-3 py-2 bg-light border-top d-flex gap-2 overflow-x-auto hide-scrollbar">
           {suggestedQuestions.map((q, idx) => (
-            <button
+            <motion.button
               key={idx}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.95 }}
               className="btn btn-sm btn-outline-purple text-nowrap rounded-pill px-3 py-1 shadow-sm"
               style={{ fontSize: '0.8rem' }}
               onClick={() => handleSend(q)}
             >
               {q}
-            </button>
+            </motion.button>
           ))}
         </div>
 
@@ -428,16 +446,18 @@ Instructions:
             value={input}
             onChange={e => setInput(e.target.value)}
           />
-          <button 
+          <motion.button 
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.92 }}
             type="submit" 
             className="btn btn-stash-primary rounded-circle p-0 d-flex align-items-center justify-content-center flex-shrink-0" 
             style={{ width: '46px', height: '46px', border: 'none' }}
             title="Send Message"
           >
             <i className="bi bi-send-fill fs-5"></i>
-          </button>
+          </motion.button>
         </form>
-      </div>
+      </motion.div>
 
       {/* Subscription Modal Component */}
       <SubscriptionModal
@@ -448,3 +468,4 @@ Instructions:
     </div>
   );
 }
+

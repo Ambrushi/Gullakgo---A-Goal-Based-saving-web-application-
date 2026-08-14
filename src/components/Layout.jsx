@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import Navbar from './Navbar';
 import BottomTabBar from './BottomTabBar';
 
@@ -6,10 +7,17 @@ export default function Layout({ children }) {
   return (
     <div className="min-vh-100 d-flex flex-column bg-light">
       <Navbar />
-      <main className="flex-grow-1">
+      <motion.main
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -12 }}
+        transition={{ duration: 0.28, ease: 'easeOut' }}
+        className="flex-grow-1"
+      >
         {children}
-      </main>
+      </motion.main>
       <BottomTabBar />
     </div>
   );
 }
+

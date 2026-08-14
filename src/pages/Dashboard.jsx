@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useApp } from '../context/AppContext';
 import SubscriptionModal from '../components/SubscriptionModal';
 
 export default function Dashboard() {
-  const { user, goals, expenses, subscription, themeMode, toggleTheme } = useApp();
+  const { user, goals, expenses, subscription, themeMode, toggleTheme, calculateDailySavingRate } = useApp();
   const [showSubModal, setShowSubModal] = useState(false);
 
   const activeGoals = goals.filter(g => g.status === 'active');
@@ -27,10 +28,28 @@ export default function Dashboard() {
     }
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+
+  const cardVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { y: 0, opacity: 1, transition: { duration: 0.4 } }
+  };
+
   return (
     <div className="pb-4">
       {/* Playful Hero Header */}
-      <div className="hero-banner mb-4">
+      <motion.div 
+        initial={{ opacity: 0, y: -15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="hero-banner mb-4"
+      >
         <div className="container">
           <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
             <div>
@@ -59,49 +78,71 @@ export default function Dashboard() {
               </button>
 
               {/* Global Streak Card Widget */}
-              <div className="glass-panel p-3 text-white text-center d-flex align-items-center gap-3">
-                <div 
+              <motion.div 
+                whileHover={{ scale: 1.05 }}
+                className="glass-panel p-3 text-white text-center d-flex align-items-center gap-3"
+              >
+                <motion.div 
+                  animate={{ scale: [1, 1.12, 1] }}
+                  transition={{ repeat: Infinity, duration: 2.2 }}
                   className="rounded-circle d-flex align-items-center justify-content-center bg-warning text-dark fw-bold shadow"
                   style={{ width: '52px', height: '52px', fontSize: '1.6rem' }}
                 >
                   🔥
-                </div>
+                </motion.div>
                 <div className="text-start">
                   <div className="text-uppercase small fw-bold opacity-75">Current Streak</div>
                   <div className="brand-font fs-3 fw-bold mb-0 text-white line-height-1">
                     {user.globalStreak} Days!
                   </div>
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       <div className="container">
         {/* Quick Actions Bar */}
-        <div className="d-flex flex-wrap gap-2 mb-4">
-          <Link to="/goals/new" className="btn btn-stash-primary d-inline-flex align-items-center gap-2">
-            <i className="bi bi-plus-circle-fill"></i>
-            New Goal
-          </Link>
-          <Link to="/expenses" className="btn btn-stash-secondary d-inline-flex align-items-center gap-2">
-            <i className="bi bi-receipt"></i>
-            Log Expense
-          </Link>
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="d-flex flex-wrap gap-2 mb-4"
+        >
+          <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
+            <Link to="/goals/new" className="btn btn-stash-primary d-inline-flex align-items-center gap-2">
+              <i className="bi bi-plus-circle-fill"></i>
+              New Goal
+            </Link>
+          </motion.div>
+
+          <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
+            <Link to="/expenses" className="btn btn-stash-secondary d-inline-flex align-items-center gap-2">
+              <i className="bi bi-receipt"></i>
+              Log Expense
+            </Link>
+          </motion.div>
+
           {user.parentLinked && (
             <div className="ms-auto d-none d-sm-flex align-items-center gap-2 bg-white px-3 py-2 rounded-pill border shadow-sm">
               <i className="bi bi-shield-check text-success fs-5"></i>
               <span className="small text-secondary fw-semibold">Parent Linked: <strong className="text-dark">{user.parentName.split(' ')[0]}</strong></span>
             </div>
           )}
-        </div>
+        </motion.div>
 
         {/* Gamification & Badges Showcase Banner */}
-        <div className="stash-card p-3 p-md-4 mb-4 text-dark position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.05) 0%, rgba(236, 72, 153, 0.05) 100%)', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2 }}
+          className="stash-card p-3 p-md-4 mb-4 text-dark position-relative overflow-hidden" 
+          style={{ background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.05) 0%, rgba(236, 72, 153, 0.05) 100%)', border: '1px solid rgba(139, 92, 246, 0.2)' }}
+        >
           <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
             <div className="d-flex align-items-center gap-3">
-              <div className="display-6">🏆</div>
+              <div className="display-6 animate-float">🏆</div>
               <div>
                 <h5 className="brand-font mb-1 text-dark">Savings Achievements & Badges</h5>
                 <div className="d-flex flex-wrap gap-2">
@@ -111,15 +152,17 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            <button 
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               className="btn btn-sm text-white fw-bold rounded-pill px-4 py-2 shadow-sm ms-auto"
               style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)' }}
               onClick={() => setShowSubModal(true)}
             >
               👑 {subscription?.planId === 'monthly' ? 'Pro Member' : 'Upgrade Plan'}
-            </button>
+            </motion.button>
           </div>
-        </div>
+        </motion.div>
 
         {/* Section Header: Active Goals */}
         <div className="d-flex justify-content-between align-items-center mb-3">
@@ -143,21 +186,37 @@ export default function Dashboard() {
             </Link>
           </div>
         ) : (
-          <div className="horizontal-scroll-snap mb-4 pe-2">
+          <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="horizontal-scroll-snap mb-4 pe-2"
+          >
             {activeGoals.map(goal => {
               const pct = Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100));
               const daysLeft = getDaysRemaining(goal.targetDate);
+              const dailyRate = goal.dailySavingRate || calculateDailySavingRate(goal.targetAmount, goal.currentAmount, goal.targetDate);
 
               return (
-                <div key={goal.id} className="stash-card p-4 d-flex flex-column justify-content-between">
+                <motion.div 
+                  key={goal.id}
+                  variants={cardVariants}
+                  whileHover={{ y: -6 }}
+                  className="stash-card p-4 d-flex flex-column justify-content-between"
+                >
                   <div>
-                    {/* Top Row: Category + Streak */}
+                    {/* Top Row: Category + Streak + Daily Target */}
                     <div className="d-flex justify-content-between align-items-center mb-3">
                       <span className={`category-badge ${getCategoryBadgeClass(goal.category)}`}>
                         <i className={`bi ${goal.icon}`}></i> {goal.category}
                       </span>
-                      <div className="streak-badge" style={{ fontSize: '0.8rem', padding: '0.2rem 0.6rem' }}>
-                        <i className="bi bi-fire text-warning"></i> {goal.streak}d
+                      <div className="d-flex align-items-center gap-1">
+                        <span className="badge bg-purple-subtle text-purple border border-purple-subtle" style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}>
+                          ⚡ ₹{dailyRate}/day
+                        </span>
+                        <div className="streak-badge" style={{ fontSize: '0.8rem', padding: '0.2rem 0.6rem' }}>
+                          <i className="bi bi-fire text-warning"></i> {goal.streak}d
+                        </div>
                       </div>
                     </div>
 
@@ -176,12 +235,14 @@ export default function Dashboard() {
                       </span>
                     </div>
 
-                    {/* Progress Bar */}
+                    {/* Progress Bar with Motion Animation */}
                     <div className="stash-progress-container mb-3">
-                      <div 
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ duration: 1, ease: 'easeOut' }}
                         className="stash-progress-bar" 
-                        style={{ width: `${pct}%` }}
-                      ></div>
+                      ></motion.div>
                     </div>
                   </div>
 
@@ -200,19 +261,25 @@ export default function Dashboard() {
                       </Link>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         )}
 
         {/* Two Column Grid for Bottom Dashboard Widgets */}
-        <div className="row g-4">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          className="row g-4"
+        >
           {/* Daily Motivation / Tips Widget */}
           <div className="col-12 col-md-6">
-            <div className="stash-card p-4 h-100 bg-white d-flex align-items-center gap-3">
+            <motion.div variants={cardVariants} className="stash-card p-4 h-100 bg-white d-flex align-items-center gap-3">
               <div 
-                className="rounded-circle p-3 d-flex align-items-center justify-content-center text-white flex-shrink-0"
+                className="rounded-circle p-3 d-flex align-items-center justify-content-center text-white flex-shrink-0 animate-float"
                 style={{ background: 'linear-gradient(135deg, #14B8A6 0%, #84CC16 100%)', width: '60px', height: '60px' }}
               >
                 <i className="bi bi-lightbulb-fill fs-2"></i>
@@ -226,12 +293,12 @@ export default function Dashboard() {
                   Before buying non-essential items, wait 24 hours. You'll often find you didn't really need it!
                 </p>
               </div>
-            </div>
+            </motion.div>
           </div>
 
           {/* Quick Expense Snapshot Widget */}
           <div className="col-12 col-md-6">
-            <div className="stash-card p-4 h-100 bg-white">
+            <motion.div variants={cardVariants} className="stash-card p-4 h-100 bg-white">
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <h5 className="brand-font mb-0 text-dark d-flex align-items-center gap-2">
                   <i className="bi bi-wallet2 text-purple"></i> Recent Expenses
@@ -246,7 +313,11 @@ export default function Dashboard() {
               ) : (
                 <div className="d-flex flex-column gap-2">
                   {expenses.slice(0, 2).map(exp => (
-                    <div key={exp.id} className="d-flex align-items-center justify-content-between p-2 rounded-3 bg-light">
+                    <motion.div 
+                      key={exp.id} 
+                      whileHover={{ x: 4 }}
+                      className="d-flex align-items-center justify-content-between p-2 rounded-3 bg-light"
+                    >
                       <div className="d-flex align-items-center gap-2">
                         <i className={`bi ${exp.icon} text-purple fs-5`}></i>
                         <div>
@@ -255,12 +326,13 @@ export default function Dashboard() {
                         </div>
                       </div>
                       <span className="fw-bold text-danger small">-₹{exp.amount}</span>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               )}
-            </div>
-        </div>
+            </motion.div>
+          </div>
+        </motion.div>
 
       </div>
 
@@ -270,6 +342,6 @@ export default function Dashboard() {
         onClose={() => setShowSubModal(false)} 
       />
     </div>
-    </div>
   );
 }
+

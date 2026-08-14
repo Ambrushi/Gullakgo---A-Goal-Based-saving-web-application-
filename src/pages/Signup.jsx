@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useApp } from '../context/AppContext';
 
 export default function Signup() {
@@ -68,7 +69,9 @@ export default function Signup() {
         {/* Top Header Bar */}
         <div className="d-flex align-items-center justify-content-between mb-4 px-2">
           <Link to="/landing" className="text-decoration-none d-flex align-items-center gap-2">
-            <div 
+            <motion.div 
+              whileHover={{ rotate: 15, scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
               className="d-flex align-items-center justify-content-center text-white rounded-circle fw-bold shadow-lg"
               style={{
                 width: '42px',
@@ -78,28 +81,38 @@ export default function Signup() {
               }}
             >
               🪙
-            </div>
+            </motion.div>
             <div>
               <span className="brand-font text-dark fs-3 mb-0">Gullak</span>
               <span className="brand-font fs-3 text-purple">Go</span>
             </div>
           </Link>
 
-          <button className="theme-toggle-btn shadow-sm" onClick={toggleTheme}>
+          <motion.button 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.9 }}
+            className="theme-toggle-btn shadow-sm" 
+            onClick={toggleTheme}
+          >
             <i className={`bi ${themeMode === 'dark' ? 'bi-sun-fill text-warning' : 'bi-moon-stars-fill text-purple'}`}></i>
             <span className="small font-semibold">{themeMode === 'dark' ? 'Day' : 'Night'}</span>
-          </button>
+          </motion.button>
         </div>
 
         {/* Responsive Glass Card Layout */}
-        <div className="glass-auth-card p-4 p-md-5">
+        <motion.div 
+          initial={{ opacity: 0, y: 25 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45 }}
+          className="glass-auth-card p-4 p-md-5"
+        >
           <div className="row g-4 align-items-center">
             
             {/* Left Column Showcase (Visible on lg screens) */}
             <div className="d-none d-lg-block col-lg-5">
               <div className="auth-side-card shadow-lg">
                 <div>
-                  <div className="d-inline-flex align-items-center justify-content-center p-3 bg-white text-purple rounded-circle mb-4 shadow" style={{ width: '60px', height: '60px', fontSize: '1.8rem' }}>
+                  <div className="d-inline-flex align-items-center justify-content-center p-3 bg-white text-purple rounded-circle mb-4 shadow animate-float" style={{ width: '60px', height: '60px', fontSize: '1.8rem' }}>
                     🪙
                   </div>
                   <h3 className="brand-font text-white mb-2">Chota Gullak, Bada Dream! 🚀</h3>
@@ -261,9 +274,14 @@ export default function Signup() {
                   </div>
 
                   {/* Submit Button */}
-                  <button type="submit" className="btn btn-stash-primary w-100 py-3 fs-6 mt-4 shadow-lg">
+                  <motion.button 
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="submit" 
+                    className="btn btn-stash-primary w-100 py-3 fs-6 mt-4 shadow-lg"
+                  >
                     Launch My Gullak 🚀
-                  </button>
+                  </motion.button>
                 </form>
 
                 <div className="text-center border-top pt-3 mt-4">
@@ -277,8 +295,9 @@ export default function Signup() {
             </div>
 
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
 }
+
