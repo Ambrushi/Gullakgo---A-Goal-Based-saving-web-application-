@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { api } from '../services/api';
 
 const AppContext = createContext();
 
@@ -87,8 +88,10 @@ export const SUBSCRIPTION_PLANS = {
     id: 'free',
     name: 'Free Teen Starter',
     price: 0,
-    period: 'forever',
-    dailyLimit: 3,
+    period: 'day',
+    promptLimit: 3,
+    limitType: 'daily',
+    category: 'free',
     badge: 'FREE TIER',
     color: '#6B7280',
     description: '3 AI Coach Prompts per day to test the waters'
@@ -98,47 +101,90 @@ export const SUBSCRIPTION_PLANS = {
     name: 'Daily Pass',
     price: 10,
     period: 'day',
-    dailyLimit: 15,
-    badge: 'POCKET FRIENDLY ⚡',
+    promptLimit: 10,
+    limitType: 'daily',
+    category: 'daily',
+    badge: 'QUICK ADVICE ⚡',
     color: '#3B82F6',
-    description: '15 AI Coach Prompts per day — perfect for quick advice'
+    valueTag: '₹1.00 / prompt',
+    description: '10 AI Coach Prompts per day for quick emergency advice'
   },
   weekly: {
     id: 'weekly',
     name: 'Weekly Saver',
     price: 49,
     period: 'week',
-    dailyLimit: 50,
-    badge: 'MOST POPULAR 🔥',
+    promptLimit: 100,
+    limitType: 'weekly',
+    category: 'weekly',
+    badge: 'SAVE 50% vs DAILY 🔥',
     color: '#8B5CF6',
-    description: '50 AI Coach Prompts per day + Goal optimization tips'
+    valueTag: '100 Prompts (₹0.49/prompt)',
+    description: '100 AI Coach Prompts for the week — 2x more value than Daily!'
+  },
+  monthly_lite: {
+    id: 'monthly_lite',
+    name: 'Monthly Saver',
+    price: 99,
+    period: 'month',
+    promptLimit: 250,
+    limitType: 'monthly',
+    category: 'monthly',
+    badge: 'SAVE 60% 💡',
+    color: '#10B981',
+    valueTag: '250 Prompts (₹0.39/prompt)',
+    description: '250 Prompts per month for consistent budget guidance'
   },
   monthly: {
     id: 'monthly',
     name: 'Monthly Pro',
     price: 149,
     period: 'month',
-    dailyLimit: 200,
-    badge: 'MAX SAVINGS 🏆',
+    promptLimit: 500,
+    limitType: 'monthly',
+    category: 'monthly',
+    badge: 'BEST VALUE 🏆 (3.5x CHEAPER)',
     color: '#EC4899',
-    description: '200 Prompts/day + AI Spending Audit & Parent Reports'
+    valueTag: '500 Prompts (₹0.29/prompt)',
+    description: '500 Prompts per month + AI Spending Audit & Parent Reports'
+  },
+  monthly_max: {
+    id: 'monthly_max',
+    name: 'Monthly Max',
+    price: 249,
+    period: 'month',
+    promptLimit: 1000,
+    limitType: 'monthly',
+    category: 'monthly',
+    badge: 'MAX POWER 🚀',
+    color: '#F59E0B',
+    valueTag: '1,000 Prompts (₹0.25/prompt)',
+    description: '1,000 Prompts per month — maximum savings & unlimited freedom'
   }
 };
 
 export const AppProvider = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [themeMode, setThemeMode] = useState('light'); // 'light' | 'dark'
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return !!localStorage.getItem('gullak_token') || !!localStorage.getItem('gullak_user');
+  });
+  const [themeMode, setThemeMode] = useState(() => {
+    return localStorage.getItem('gullak_theme') || 'light';
+  }); // 'light' | 'dark'
 
-  const [user, setUser] = useState({
-    name: 'Aarav Sharma',
-    handle: '@aarav_saver',
-    avatar: '⚡',
-    level: 'Savings Champion 🏆',
-    totalSaved: 41949,
-    globalStreak: 8,
-    parentLinked: true,
-    parentName: 'Rajesh Sharma (Dad)',
-    parentEmail: 'rajesh.sharma@example.com'
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('gullak_user');
+    return saved ? JSON.parse(saved) : {
+      id: 'usr_default',
+      name: 'Aarav Sharma',
+      handle: '@aarav_saver',
+      avatar: '⚡',
+      level: 'Savings Champion 🏆',
+      totalSaved: 41949,
+      globalStreak: 8,
+      parentLinked: true,
+      parentName: 'Rajesh Sharma (Dad)',
+      parentEmail: 'rajesh.sharma@example.com'
+    };
   });
 
   const [bankAccount, setBankAccount] = useState(() => {
@@ -178,14 +224,58 @@ export const AppProvider = ({ children }) => {
     ];
   });
 
-  const [goals, setGoals] = useState(initialGoals);
-  const [expenses, setExpenses] = useState(initialExpenses);
+  const [goals, setGoals] = useState(() => {
+    const saved = localStorage.getItem('gullak_goals');
+    let loaded = initialGoals;
+    if (saved) {
+      try { loaded = JSON.parse(saved); } catch (e) { console.error('Failed to parse gullak_goals', e); }
+    }
+    return loaded.map(g => {
+      const contribTotal = (g.contributions && Array.isArray(g.contributions) && g.contributions.length > 0)
+        ? g.contributions.reduce((s, c) => s + (parseFloat(c.amount) || 0), 0)
+        : (parseFloat(g.currentAmount) || 0);
+      return {
+        ...g,
+        currentAmount: Math.max(parseFloat(g.currentAmount) || 0, contribTotal)
+      };
+    });
+  });
+
+  const [expenses, setExpenses] = useState(() => {
+    const saved = localStorage.getItem('gullak_expenses');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { console.error('Failed to parse gullak_expenses', e); }
+    }
+    return initialExpenses;
+  });
+
+  // Save goals & expenses to localStorage on change
+  useEffect(() => {
+    localStorage.setItem('gullak_goals', JSON.stringify(goals));
+  }, [goals]);
+
+  useEffect(() => {
+    localStorage.setItem('gullak_expenses', JSON.stringify(expenses));
+  }, [expenses]);
 
   // Subscription & AI Prompt Usage State
   const [subscription, setSubscription] = useState(() => {
     const saved = localStorage.getItem('gullak_subscription');
     return saved ? JSON.parse(saved) : { planId: 'free', expiryDate: null };
   });
+
+  // Auto-check subscription plan expiration on client
+  useEffect(() => {
+    if (subscription?.expiryDate && subscription.planId !== 'free') {
+      const expiryTime = new Date(subscription.expiryDate).getTime();
+      if (Date.now() > expiryTime) {
+        console.log('⏳ Client plan expired. Reverting to Free Tier.');
+        const expiredSub = { planId: 'free', expiryDate: null };
+        setSubscription(expiredSub);
+        localStorage.setItem('gullak_subscription', JSON.stringify(expiredSub));
+      }
+    }
+  }, [subscription]);
 
   const [geminiApiKey, setGeminiApiKeyState] = useState(() => {
     const envKey = import.meta.env.VITE_GEMINI_API_KEY;
@@ -209,77 +299,42 @@ export const AppProvider = ({ children }) => {
     return { count: 0, lastResetDate: today };
   });
 
-  // Daily reset check on mount / interval
+  // Sync data with Axios API on mount or user change
   useEffect(() => {
-    const today = getTodayStr();
-    if (aiUsage.lastResetDate !== today) {
-      const newUsage = { count: 0, lastResetDate: today };
-      setAiUsage(newUsage);
-      localStorage.setItem('gullak_ai_usage', JSON.stringify(newUsage));
-    }
-  }, []);
+    const fetchRemoteData = async () => {
+      try {
+        if (!user?.id || user.id === 'usr_default') return;
+        const [remoteGoals, remoteExpenses, remotePayments, remoteSub] = await Promise.allSettled([
+          api.getGoals(user.id),
+          api.getExpenses(user.id),
+          api.getPayments(user.id),
+          api.getSubscription(user.id)
+        ]);
 
-  const saveGeminiApiKey = (key) => {
-    setGeminiApiKeyState(key);
-    localStorage.setItem('gullak_gemini_api_key', key);
-  };
-
-  const currentPlan = SUBSCRIPTION_PLANS[subscription.planId] || SUBSCRIPTION_PLANS.free;
-
-  const getRemainingPrompts = () => {
-    const today = getTodayStr();
-    const currentCount = aiUsage.lastResetDate === today ? aiUsage.count : 0;
-    const limit = currentPlan.dailyLimit;
-    const remaining = Math.max(0, limit - currentCount);
-    return {
-      count: currentCount,
-      limit,
-      remaining,
-      plan: currentPlan
-    };
-  };
-
-  const canSendAIPrompt = () => {
-    const { remaining } = getRemainingPrompts();
-    return remaining > 0;
-  };
-
-  const incrementAIUsage = () => {
-    const today = getTodayStr();
-    setAiUsage(prev => {
-      const currentCount = prev.lastResetDate === today ? prev.count : 0;
-      const updated = { count: currentCount + 1, lastResetDate: today };
-      localStorage.setItem('gullak_ai_usage', JSON.stringify(updated));
-      return updated;
-    });
-  };
-
-  const subscribeToPlan = (planId) => {
-    const targetPlan = SUBSCRIPTION_PLANS[planId];
-    if (!targetPlan) return;
-
-    let expiry = new Date();
-    if (planId === 'daily') expiry.setDate(expiry.getDate() + 1);
-    else if (planId === 'weekly') expiry.setDate(expiry.getDate() + 7);
-    else if (planId === 'monthly') expiry.setDate(expiry.getDate() + 30);
-    else expiry = null;
-
-    const newSub = {
-      planId,
-      expiryDate: expiry ? expiry.toISOString() : null
+        if (remoteGoals.status === 'fulfilled' && Array.isArray(remoteGoals.value) && remoteGoals.value.length > 0) {
+          setGoals(remoteGoals.value);
+        }
+        if (remoteExpenses.status === 'fulfilled' && Array.isArray(remoteExpenses.value) && remoteExpenses.value.length > 0) {
+          setExpenses(remoteExpenses.value);
+        }
+        if (remotePayments.status === 'fulfilled' && Array.isArray(remotePayments.value)) {
+          setPaymentHistory(remotePayments.value);
+        }
+        if (remoteSub.status === 'fulfilled' && remoteSub.value?.planId) {
+          setSubscription({
+            planId: remoteSub.value.planId,
+            expiryDate: remoteSub.value.expiryDate || null
+          });
+        }
+      } catch (err) {
+        console.warn('⚠️ Server sync notice (Using local fallback):', err);
+      }
     };
 
-    setSubscription(newSub);
-    localStorage.setItem('gullak_subscription', JSON.stringify(newSub));
+    fetchRemoteData();
+  }, [user?.id]);
 
-    // Reset daily usage upon upgrading
-    const today = getTodayStr();
-    const resetUsage = { count: 0, lastResetDate: today };
-    setAiUsage(resetUsage);
-    localStorage.setItem('gullak_ai_usage', JSON.stringify(resetUsage));
-  };
-
-  // Apply dark mode class to html element
+  // Apply dark mode class to html element & save to localStorage
   useEffect(() => {
     if (themeMode === 'dark') {
       document.documentElement.setAttribute('data-bs-theme', 'dark');
@@ -288,6 +343,7 @@ export const AppProvider = ({ children }) => {
       document.documentElement.setAttribute('data-bs-theme', 'light');
       document.body.classList.remove('dark-theme');
     }
+    localStorage.setItem('gullak_theme', themeMode);
   }, [themeMode]);
 
   const [registeredUsers, setRegisteredUsers] = useState(() => {
@@ -295,6 +351,7 @@ export const AppProvider = ({ children }) => {
     if (saved) return JSON.parse(saved);
     return [
       {
+        id: 'usr_default',
         name: 'Aarav Sharma',
         mobile: '9876543210',
         email: 'aarav@example.com',
@@ -311,17 +368,108 @@ export const AppProvider = ({ children }) => {
     ];
   });
 
+  const saveGeminiApiKey = (key) => {
+    setGeminiApiKeyState(key);
+    localStorage.setItem('gullak_gemini_api_key', key);
+  };
+
+  const currentPlan = SUBSCRIPTION_PLANS[subscription.planId] || SUBSCRIPTION_PLANS.free;
+
+  const getRemainingPrompts = () => {
+    const today = getTodayStr();
+    const isDailyPlan = currentPlan.limitType === 'daily';
+    const currentCount = (isDailyPlan && aiUsage.lastResetDate !== today) ? 0 : aiUsage.count;
+    const limit = currentPlan.promptLimit || 3;
+    const remaining = Math.max(0, limit - currentCount);
+    return {
+      count: currentCount,
+      limit,
+      remaining,
+      plan: currentPlan,
+      limitUnit: isDailyPlan ? 'day' : currentPlan.period
+    };
+  };
+
+  const getSubscriptionExpiryStatus = () => {
+    if (!subscription?.expiryDate || subscription.planId === 'free') {
+      return { isExpiringSoon: false, hoursRemaining: 0, planName: currentPlan.name || '' };
+    }
+    const expiryTime = new Date(subscription.expiryDate).getTime();
+    const nowTime = Date.now();
+    const diffMs = expiryTime - nowTime;
+    const twentyFourHoursMs = 24 * 60 * 60 * 1000;
+
+    if (diffMs > 0 && diffMs <= twentyFourHoursMs) {
+      return {
+        isExpiringSoon: true,
+        hoursRemaining: Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60))),
+        planName: currentPlan.name || 'Pro Pass',
+        expiryDateStr: new Date(subscription.expiryDate).toLocaleDateString('en-IN', {
+          day: 'numeric',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      };
+    }
+
+    return { isExpiringSoon: false, hoursRemaining: 0, planName: currentPlan.name || '' };
+  };
+
+  const canSendAIPrompt = () => {
+    const { remaining } = getRemainingPrompts();
+    return remaining > 0;
+  };
+
+  const incrementAIUsage = async () => {
+    const today = getTodayStr();
+    const isDailyPlan = currentPlan.limitType === 'daily';
+
+    setAiUsage(prev => {
+      const baseCount = (isDailyPlan && prev.lastResetDate !== today) ? 0 : prev.count;
+      const updated = { count: baseCount + 1, lastResetDate: today };
+      localStorage.setItem('gullak_ai_usage', JSON.stringify(updated));
+      return updated;
+    });
+
+    try {
+      if (user?.id) {
+        await api.incrementAIUsage(user.id);
+      }
+    } catch (err) {
+      console.warn('⚠️ AI usage API notice:', err.message);
+    }
+  };
+
   const toggleTheme = () => {
     setThemeMode(prev => (prev === 'light' ? 'dark' : 'light'));
   };
 
-  const signUp = ({ name, mobile, email, password }) => {
+  const signUp = async ({ name, mobile, email, password }) => {
+    try {
+      const response = await api.signup({ name, mobile, email, password });
+      if (response && response.user) {
+        if (response.token) {
+          localStorage.setItem('gullak_token', response.token);
+        }
+        localStorage.setItem('gullak_user', JSON.stringify(response.user));
+        setUser(response.user);
+        setIsAuthenticated(true);
+        return { success: true, message: response.message };
+      }
+    } catch (error) {
+      console.warn('⚠️ Signup fallback to local registration:', error.message);
+      return { success: false, message: error.message || 'Failed to create account' };
+    }
+
+    // Local Fallback if server is unreachable
     const existing = registeredUsers.find(u => u.mobile === mobile);
     if (existing) {
       return { success: false, message: 'This mobile number is already registered!' };
     }
 
     const newUser = {
+      id: 'usr_' + Date.now(),
       name,
       mobile,
       email,
@@ -340,20 +488,38 @@ export const AppProvider = ({ children }) => {
     setRegisteredUsers(updatedList);
     localStorage.setItem('gullak_registered_users', JSON.stringify(updatedList));
 
+    localStorage.setItem('gullak_user', JSON.stringify(newUser));
     setUser(newUser);
     setIsAuthenticated(true);
-    return { success: true };
+    return { success: true, message: 'Account created locally!' };
   };
 
-  const loginWithMobile = ({ mobile, password }) => {
+  const loginWithMobile = async ({ mobile, password }) => {
+    try {
+      const response = await api.login({ mobile, password });
+      if (response && response.user) {
+        if (response.token) {
+          localStorage.setItem('gullak_token', response.token);
+        }
+        localStorage.setItem('gullak_user', JSON.stringify(response.user));
+        setUser(response.user);
+        setIsAuthenticated(true);
+        return { success: true, message: response.message };
+      }
+    } catch (error) {
+      console.warn('⚠️ Login fallback to local validation:', error.message);
+      return { success: false, message: error.message || 'Invalid Mobile Number or Password' };
+    }
+
     const foundUser = registeredUsers.find(
       u => u.mobile === mobile && u.password === password
     );
 
     if (foundUser) {
+      localStorage.setItem('gullak_user', JSON.stringify(foundUser));
       setUser(foundUser);
       setIsAuthenticated(true);
-      return { success: true };
+      return { success: true, message: 'Signed in locally!' };
     }
 
     return { success: false, message: 'Invalid Mobile Number or Password' };
@@ -361,17 +527,35 @@ export const AppProvider = ({ children }) => {
 
   const login = (nameStr) => {
     if (nameStr) {
-      setUser(prev => ({
-        ...prev,
-        name: nameStr,
-        handle: `@${nameStr.toLowerCase().replace(/\s+/g, '_')}`
-      }));
+      setUser(prev => {
+        const updated = {
+          ...prev,
+          name: nameStr,
+          handle: `@${nameStr.toLowerCase().replace(/\s+/g, '_')}`
+        };
+        localStorage.setItem('gullak_user', JSON.stringify(updated));
+        return updated;
+      });
     }
     setIsAuthenticated(true);
   };
 
   const logout = () => {
+    localStorage.removeItem('gullak_token');
+    localStorage.removeItem('gullak_user');
     setIsAuthenticated(false);
+    setUser({
+      id: 'usr_default',
+      name: 'Aarav Sharma',
+      handle: '@aarav_saver',
+      avatar: '⚡',
+      level: 'Savings Champion 🏆',
+      totalSaved: 41949,
+      globalStreak: 8,
+      parentLinked: true,
+      parentName: 'Rajesh Sharma (Dad)',
+      parentEmail: 'rajesh.sharma@example.com'
+    });
   };
 
   const completeOnboarding = (userData) => {
@@ -393,28 +577,42 @@ export const AppProvider = ({ children }) => {
     return Math.ceil(needed / diffDays);
   };
 
-  const addGoal = (newGoal) => {
+  const addGoal = async (newGoal) => {
+    const goalId = newGoal.id || ('g_' + Date.now());
     const calculatedRate = calculateDailySavingRate(newGoal.targetAmount, 0, newGoal.targetDate);
-    const goalWithId = {
+    const goalWithDefaults = {
       ...newGoal,
-      id: Date.now().toString(),
-      currentAmount: 0,
+      id: goalId,
+      userId: user.id || 'usr_default',
+      currentAmount: parseFloat(newGoal.currentAmount || 0),
       dailySavingRate: newGoal.dailySavingRate ? parseFloat(newGoal.dailySavingRate) : calculatedRate,
-      streak: 1,
-      status: 'active',
-      contributions: []
+      streak: newGoal.streak || 1,
+      status: newGoal.status || 'active',
+      contributions: newGoal.contributions || []
     };
-    setGoals(prev => [goalWithId, ...prev]);
+
+    setGoals(prev => [goalWithDefaults, ...prev]);
+
+    try {
+      const res = await api.createGoal(goalWithDefaults);
+      if (res && res.goal) {
+        setGoals(prev => prev.map(g => (String(g.id) === String(goalId) ? { ...g, ...res.goal } : g)));
+      }
+    } catch (err) {
+      console.warn('⚠️ Goal creation API notice (saved locally):', err.message);
+    }
   };
 
-  const updateGoal = (goalId, updatedFields) => {
+  const updateGoal = async (goalId, updatedFields) => {
     setGoals(prevGoals =>
       prevGoals.map(goal => {
-        if (goal.id === goalId) {
+        if (String(goal.id) === String(goalId)) {
           const updated = { ...goal, ...updatedFields };
-          if (updated.targetAmount && updated.currentAmount >= updated.targetAmount) {
+          const currentAmt = parseFloat(updated.currentAmount) || 0;
+          const targetAmt = parseFloat(updated.targetAmount) || 0;
+          if (targetAmt > 0 && currentAmt >= targetAmt) {
             updated.status = 'completed';
-          } else if (updated.status === 'completed' && updated.targetAmount && updated.currentAmount < updated.targetAmount) {
+          } else if (updated.status === 'completed' && targetAmt > 0 && currentAmt < targetAmt) {
             updated.status = 'active';
           }
           return updated;
@@ -422,34 +620,45 @@ export const AppProvider = ({ children }) => {
         return goal;
       })
     );
+
+    try {
+      await api.updateGoal(goalId, updatedFields);
+    } catch (err) {
+      console.warn('⚠️ Goal update API notice:', err.message);
+    }
   };
 
-  const deleteGoal = (goalId) => {
-    setGoals(prev => prev.filter(g => g.id !== goalId));
+  const deleteGoal = async (goalId) => {
+    setGoals(prev => prev.filter(g => String(g.id) !== String(goalId)));
+    try {
+      await api.deleteGoal(goalId);
+    } catch (err) {
+      console.warn('⚠️ Goal delete API notice:', err.message);
+    }
   };
 
-  const addContribution = (goalId, amount, note = 'Daily Streak Contribution 🔥') => {
+  const addContribution = async (goalId, amount, note = 'Daily Streak Contribution 🔥') => {
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) return;
 
     setGoals(prevGoals =>
       prevGoals.map(goal => {
-        if (goal.id === goalId) {
-          const newCurrent = goal.currentAmount + numAmount;
-          const updatedContributions = [
-            {
-              id: 'c_' + Date.now(),
-              date: new Date().toISOString().split('T')[0],
-              amount: numAmount,
-              note
-            },
-            ...goal.contributions
-          ];
-          const isCompleted = newCurrent >= goal.targetAmount;
+        if (String(goal.id) === String(goalId)) {
+          const currentAmt = parseFloat(goal.currentAmount) || 0;
+          const newCurrent = currentAmt + numAmount;
+          const newContribution = {
+            id: 'c_' + Date.now(),
+            date: new Date().toISOString().split('T')[0],
+            amount: numAmount,
+            note
+          };
+          const updatedContributions = [newContribution, ...(goal.contributions || [])];
+          const isCompleted = newCurrent >= parseFloat(goal.targetAmount);
+
           return {
             ...goal,
             currentAmount: newCurrent,
-            streak: goal.streak + 1,
+            streak: (goal.streak || 0) + 1,
             status: isCompleted ? 'completed' : goal.status,
             contributions: updatedContributions
           };
@@ -458,33 +667,88 @@ export const AppProvider = ({ children }) => {
       })
     );
 
-    setUser(prev => ({
-      ...prev,
-      totalSaved: prev.totalSaved + numAmount,
-      globalStreak: prev.globalStreak + 1
-    }));
+    setUser(prev => {
+      const updatedUser = {
+        ...prev,
+        totalSaved: (parseFloat(prev.totalSaved) || 0) + numAmount,
+        globalStreak: (parseInt(prev.globalStreak) || 0) + 1
+      };
+      localStorage.setItem('gullak_user', JSON.stringify(updatedUser));
+      return updatedUser;
+    });
+
+    try {
+      const res = await api.addContribution(goalId, { userId: user.id, amount: numAmount, note });
+      if (res && res.goal) {
+        setGoals(prevGoals =>
+          prevGoals.map(g => (String(g.id) === String(goalId) ? { ...g, ...res.goal } : g))
+        );
+      }
+    } catch (err) {
+      console.warn('⚠️ Contribution API notice (saved locally):', err.message);
+    }
   };
 
-  const addExpense = (newExpense) => {
-    const expenseWithId = {
-      ...newExpense,
+  const addExpense = async (newExpense) => {
+    const expenseData = {
       id: 'e_' + Date.now(),
+      userId: user.id || 'usr_default',
+      ...newExpense,
       amount: parseFloat(newExpense.amount),
-      date: new Date().toISOString().split('T')[0]
+      date: newExpense.date || new Date().toISOString().split('T')[0]
     };
-    setExpenses(prev => [expenseWithId, ...prev]);
+
+    setExpenses(prev => [expenseData, ...prev]);
+
+    try {
+      const res = await api.addExpense(expenseData);
+      if (res && res.expense) {
+        setExpenses(prev => prev.map(e => e.id === expenseData.id ? res.expense : e));
+      }
+    } catch (err) {
+      console.warn('⚠️ Add expense API notice (saved locally):', err.message);
+    }
   };
 
-  const toggleParentLink = (linkedStatus, parentInfo = {}) => {
+  const toggleParentLink = async (linkedStatus, parentInfo = {}) => {
+    const updatedUser = {
+      parentLinked: linkedStatus,
+      parentName: parentInfo.parentName || user.parentName,
+      parentEmail: parentInfo.parentEmail || user.parentEmail
+    };
+
+    try {
+      if (user.id) {
+        await api.updateProfile(user.id, updatedUser);
+      }
+    } catch (err) {
+      console.warn('⚠️ Update profile API notice:', err.message);
+    }
+
     setUser(prev => ({
       ...prev,
-      parentLinked: linkedStatus,
-      parentName: parentInfo.parentName || prev.parentName,
-      parentEmail: parentInfo.parentEmail || prev.parentEmail
+      ...updatedUser
     }));
   };
 
-  const updateBankAccountDetails = (details) => {
+  const deleteExpense = async (expenseId) => {
+    try {
+      await api.deleteExpense(expenseId);
+    } catch (err) {
+      console.warn('⚠️ Delete expense API notice:', err.message);
+    }
+    setExpenses(prev => prev.filter(e => e.id !== expenseId));
+  };
+
+  const updateBankAccountDetails = async (details) => {
+    try {
+      if (user?.id) {
+        await api.updateBankDetails(user.id, details);
+      }
+    } catch (err) {
+      console.warn('⚠️ Bank details update API notice:', err.message);
+    }
+
     setBankAccount(prev => {
       const updated = { ...prev, ...details };
       localStorage.setItem('gullak_bank_account', JSON.stringify(updated));
@@ -492,7 +756,17 @@ export const AppProvider = ({ children }) => {
     });
   };
 
-  const recordPayment = (tx) => {
+  const recordPayment = async (tx) => {
+    try {
+      const res = await api.recordPayment({ userId: user.id, ...tx });
+      if (res && res.payment) {
+        setPaymentHistory(prev => [res.payment, ...prev]);
+        return res.payment;
+      }
+    } catch (err) {
+      console.warn('⚠️ Record payment API notice:', err.message);
+    }
+
     const newTx = {
       id: 'tx_' + Date.now(),
       utr: tx.utr || 'UPI/' + Math.floor(100000000000 + Math.random() * 900000000000),
@@ -506,6 +780,69 @@ export const AppProvider = ({ children }) => {
       return updated;
     });
     return newTx;
+  };
+
+  const subscribeToPlan = async (planId, paymentApp = 'Google Pay') => {
+    const targetPlan = SUBSCRIPTION_PLANS[planId];
+    if (!targetPlan) return;
+
+    try {
+      if (user?.id) {
+        const res = await api.buySubscription(user.id, planId, paymentApp);
+        if (res && res.subscription) {
+          setSubscription({
+            planId: res.subscription.planId,
+            expiryDate: res.subscription.expiryDate || null
+          });
+          if (res.payment) {
+            setPaymentHistory(prev => [res.payment, ...prev]);
+          }
+          // Reset daily usage on upgrade
+          const today = getTodayStr();
+          const resetUsage = { count: 0, lastResetDate: today };
+          setAiUsage(resetUsage);
+          localStorage.setItem('gullak_ai_usage', JSON.stringify(resetUsage));
+          return res;
+        }
+      }
+    } catch (err) {
+      console.warn('⚠️ Buy subscription API notice:', err.message);
+    }
+
+    // Local Fallback
+    let expiry = new Date();
+    if (planId === 'daily') expiry.setDate(expiry.getDate() + 1);
+    else if (planId === 'weekly') expiry.setDate(expiry.getDate() + 7);
+    else if (planId === 'monthly') expiry.setDate(expiry.getDate() + 30);
+    else expiry = null;
+
+    const newSub = {
+      planId,
+      expiryDate: expiry ? expiry.toISOString() : null
+    };
+
+    setSubscription(newSub);
+    localStorage.setItem('gullak_subscription', JSON.stringify(newSub));
+
+    // Log local transaction
+    if (targetPlan.price > 0) {
+      const newTx = {
+        id: 'tx_' + Date.now(),
+        utr: 'UPI/' + Math.floor(100000000000 + Math.random() * 900000000000),
+        date: new Date().toISOString().split('T')[0],
+        type: 'Subscription',
+        description: `${targetPlan.name} Upgrade`,
+        amount: targetPlan.price,
+        status: 'SUCCESS',
+        app: paymentApp
+      };
+      setPaymentHistory(prev => [newTx, ...prev]);
+    }
+
+    const today = getTodayStr();
+    const resetUsage = { count: 0, lastResetDate: today };
+    setAiUsage(resetUsage);
+    localStorage.setItem('gullak_ai_usage', JSON.stringify(resetUsage));
   };
 
   return (
@@ -532,11 +869,13 @@ export const AppProvider = ({ children }) => {
         calculateDailySavingRate,
         addContribution,
         addExpense,
+        deleteExpense,
         toggleParentLink,
         subscription,
         geminiApiKey,
         saveGeminiApiKey,
         getRemainingPrompts,
+        getSubscriptionExpiryStatus,
         canSendAIPrompt,
         incrementAIUsage,
         subscribeToPlan

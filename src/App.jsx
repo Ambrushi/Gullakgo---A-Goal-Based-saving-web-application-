@@ -1,5 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { AppProvider, useApp } from './context/AppContext';
 import Layout from './components/Layout';
 import LandingPage from './pages/LandingPage';
@@ -106,6 +108,7 @@ export default function App() {
   return (
     <AppProvider>
       <BrowserRouter>
+        <ToastContainer position="top-right" autoClose={3500} hideProgressBar={false} theme="colored" />
         <AppRoutes />
       </BrowserRouter>
     </AppProvider>

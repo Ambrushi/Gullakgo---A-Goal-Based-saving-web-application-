@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { toast } from 'react-toastify';
 import { useApp } from '../context/AppContext';
 
 export default function Login() {
@@ -11,31 +12,48 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
     const cleanMobile = mobile.replace(/\D/g, '');
     if (cleanMobile.length !== 10) {
       setError('Please enter your 10-digit mobile number');
+      toast.error('Please enter a valid 10-digit mobile number');
       return;
     }
 
     if (!password) {
       setError('Please enter your password');
+      toast.error('Please enter your password');
       return;
     }
 
-    const result = loginWithMobile({
-      mobile: cleanMobile,
-      password
-    });
+    setLoading(true);
 
-    if (result.success) {
-      navigate('/');
-    } else {
-      setError(result.message || 'Invalid Mobile Number or Password');
+    try {
+      const result = await loginWithMobile({
+        mobile: cleanMobile,
+        password
+      });
+
+      setLoading(false);
+
+      if (result && result.success) {
+        toast.success('Signed in successfully! Welcome back 🚀');
+        navigate('/');
+      } else {
+        const errMsg = result?.message || 'Invalid Mobile Number or Password';
+        setError(errMsg);
+        toast.error(errMsg);
+      }
+    } catch (err) {
+      setLoading(false);
+      const errMsg = err.message || 'Server error occurred during sign in';
+      setError(errMsg);
+      toast.error(errMsg);
     }
   };
 
@@ -200,9 +218,14 @@ export default function Login() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     type="submit" 
+                    disabled={loading}
                     className="btn btn-stash-primary w-100 py-3 fs-6 mb-3 shadow-lg"
                   >
-                    Sign In to Dashboard 🚀
+                    {loading ? (
+                      <span><span className="spinner-border spinner-border-sm me-2"></span>Signing in...</span>
+                    ) : (
+                      'Sign In to Dashboard 🚀'
+                    )}
                   </motion.button>
                 </form>
 
@@ -236,4 +259,3 @@ export default function Login() {
     </div>
   );
 }
-

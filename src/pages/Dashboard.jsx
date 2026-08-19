@@ -5,8 +5,10 @@ import { useApp } from '../context/AppContext';
 import SubscriptionModal from '../components/SubscriptionModal';
 
 export default function Dashboard() {
-  const { user, goals, expenses, subscription, themeMode, toggleTheme, calculateDailySavingRate } = useApp();
+  const { user, goals, expenses, subscription, themeMode, toggleTheme, calculateDailySavingRate, getSubscriptionExpiryStatus } = useApp();
   const [showSubModal, setShowSubModal] = useState(false);
+
+  const expiryStatus = getSubscriptionExpiryStatus();
 
   const activeGoals = goals.filter(g => g.status === 'active');
 
@@ -103,6 +105,35 @@ export default function Dashboard() {
       </motion.div>
 
       <div className="container">
+        {/* 1-Day Plan Expiry Reminder Warning Banner */}
+        {expiryStatus.isExpiringSoon && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="alert alert-warning border border-warning-subtle shadow-sm rounded-4 p-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2"
+            style={{ backgroundColor: '#FEF3C7', color: '#92400E' }}
+          >
+            <div className="d-flex align-items-center gap-3">
+              <span className="fs-3 animate-float">⏰</span>
+              <div>
+                <strong className="d-block text-dark">
+                  Plan Expiry Reminder: Your {expiryStatus.planName} expires in ~{expiryStatus.hoursRemaining} hours!
+                </strong>
+                <span className="small text-secondary">
+                  Renew or upgrade now so you don't lose your 50–200 daily AI prompts!
+                </span>
+              </div>
+            </div>
+            <button 
+              className="btn btn-sm text-white fw-bold rounded-pill px-3 py-2 shadow-sm"
+              style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)' }}
+              onClick={() => setShowSubModal(true)}
+            >
+              Renew / Upgrade Now ⚡
+            </button>
+          </motion.div>
+        )}
+
         {/* Quick Actions Bar */}
         <motion.div 
           initial={{ opacity: 0, y: 15 }}
@@ -193,9 +224,14 @@ export default function Dashboard() {
             className="horizontal-scroll-snap mb-4 pe-2"
           >
             {activeGoals.map(goal => {
-              const pct = Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100));
+              const contribTotal = (goal.contributions && Array.isArray(goal.contributions) && goal.contributions.length > 0)
+                ? goal.contributions.reduce((s, c) => s + (parseFloat(c.amount) || 0), 0)
+                : (parseFloat(goal.currentAmount) || 0);
+              const currentAmount = Math.max(parseFloat(goal.currentAmount) || 0, contribTotal);
+
+              const pct = Math.min(100, Math.round((currentAmount / goal.targetAmount) * 100));
               const daysLeft = getDaysRemaining(goal.targetDate);
-              const dailyRate = goal.dailySavingRate || calculateDailySavingRate(goal.targetAmount, goal.currentAmount, goal.targetDate);
+              const dailyRate = goal.dailySavingRate || calculateDailySavingRate(goal.targetAmount, currentAmount, goal.targetDate);
 
               return (
                 <motion.div 
@@ -228,7 +264,7 @@ export default function Dashboard() {
                     {/* Money Figures in INR (₹) */}
                     <div className="d-flex justify-content-between align-items-baseline mb-2">
                       <span className="brand-font fs-4 text-purple fw-bold" style={{ color: '#7C3AED' }}>
-                        ₹{goal.currentAmount.toLocaleString('en-IN')}
+                        ₹{currentAmount.toLocaleString('en-IN')}
                       </span>
                       <span className="text-secondary small fw-semibold">
                         of ₹{goal.targetAmount.toLocaleString('en-IN')}

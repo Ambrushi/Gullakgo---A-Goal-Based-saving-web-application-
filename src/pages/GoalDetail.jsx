@@ -20,6 +20,7 @@ export default function GoalDetail() {
   // UPI Payment Modal State
   const [showUpiModal, setShowUpiModal] = useState(false);
   const [upiPayAmount, setUpiPayAmount] = useState(0);
+  const [payNotice, setPayNotice] = useState(false);
 
   // Edit / Customize Goal modal state
   const [showEditModal, setShowEditModal] = useState(false);
@@ -40,8 +41,14 @@ export default function GoalDetail() {
     );
   }
 
-  const effectiveDailyRate = goal.dailySavingRate || calculateDailySavingRate(goal.targetAmount, goal.currentAmount, goal.targetDate);
-  const pct = Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100));
+  const totalFromContributions = (goal.contributions && goal.contributions.length > 0)
+    ? goal.contributions.reduce((sum, c) => sum + (parseFloat(c.amount) || 0), 0)
+    : (parseFloat(goal.currentAmount) || 0);
+
+  const currentAmount = Math.max(parseFloat(goal.currentAmount) || 0, totalFromContributions);
+
+  const effectiveDailyRate = goal.dailySavingRate || calculateDailySavingRate(goal.targetAmount, currentAmount, goal.targetDate);
+  const pct = Math.min(100, Math.round((currentAmount / goal.targetAmount) * 100));
 
   // Circular progress calculation
   const radius = 70;
@@ -233,7 +240,7 @@ export default function GoalDetail() {
         <div className="row g-2 justify-content-center mb-4">
           <div className="col-5 bg-light p-3 rounded-4">
             <div className="text-secondary small fw-semibold">Saved So Far</div>
-            <div className="brand-font fs-3 text-purple">₹{goal.currentAmount.toLocaleString('en-IN')}</div>
+            <div className="brand-font fs-3 text-purple">₹{currentAmount.toLocaleString('en-IN')}</div>
           </div>
           <div className="col-5 bg-light p-3 rounded-4">
             <div className="text-secondary small fw-semibold">Target Goal</div>
@@ -331,7 +338,7 @@ export default function GoalDetail() {
           <i className="bi bi-clock-history text-purple"></i> Contribution History
         </h4>
 
-        {goal.contributions.length === 0 ? (
+        {(!goal.contributions || goal.contributions.length === 0) ? (
           <p className="text-muted text-center py-3">No contributions logged yet. Add your first top-up!</p>
         ) : (
           <div className="d-flex flex-column gap-3">

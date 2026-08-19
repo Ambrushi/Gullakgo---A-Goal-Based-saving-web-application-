@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { toast } from 'react-toastify';
 import { useApp } from '../context/AppContext';
 
 export default function Signup() {
@@ -14,48 +15,73 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
     if (!name.trim()) {
-      setError('Please enter your full name');
+      const msg = 'Please enter your full name';
+      setError(msg);
+      toast.error(msg);
       return;
     }
 
     const cleanMobile = mobile.replace(/\D/g, '');
     if (cleanMobile.length !== 10) {
-      setError('Please enter a valid 10-digit mobile number');
+      const msg = 'Please enter a valid 10-digit mobile number';
+      setError(msg);
+      toast.error(msg);
       return;
     }
 
     if (!email.trim() || !email.includes('@')) {
-      setError('Please enter a valid email address');
+      const msg = 'Please enter a valid email address';
+      setError(msg);
+      toast.error(msg);
       return;
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
+      const msg = 'Password must be at least 6 characters long';
+      setError(msg);
+      toast.error(msg);
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      const msg = 'Passwords do not match';
+      setError(msg);
+      toast.error(msg);
       return;
     }
 
-    const result = signUp({
-      name: name.trim(),
-      mobile: cleanMobile,
-      email: email.trim(),
-      password
-    });
+    setLoading(true);
 
-    if (result.success) {
-      navigate('/');
-    } else {
-      setError(result.message || 'Failed to create account');
+    try {
+      const result = await signUp({
+        name: name.trim(),
+        mobile: cleanMobile,
+        email: email.trim(),
+        password
+      });
+
+      setLoading(false);
+
+      if (result && result.success) {
+        toast.success(result.message || 'Account created successfully! Welcome to GullakGo 🎉');
+        navigate('/');
+      } else {
+        const errMsg = result?.message || 'Failed to create account';
+        setError(errMsg);
+        toast.error(errMsg);
+      }
+    } catch (err) {
+      setLoading(false);
+      const errMsg = err.message || 'Server error occurred during account creation';
+      setError(errMsg);
+      toast.error(errMsg);
     }
   };
 
@@ -278,9 +304,14 @@ export default function Signup() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     type="submit" 
+                    disabled={loading}
                     className="btn btn-stash-primary w-100 py-3 fs-6 mt-4 shadow-lg"
                   >
-                    Launch My Gullak 🚀
+                    {loading ? (
+                      <span><span className="spinner-border spinner-border-sm me-2"></span>Creating Account...</span>
+                    ) : (
+                      'Launch My Gullak 🚀'
+                    )}
                   </motion.button>
                 </form>
 
@@ -300,4 +331,3 @@ export default function Signup() {
     </div>
   );
 }
-

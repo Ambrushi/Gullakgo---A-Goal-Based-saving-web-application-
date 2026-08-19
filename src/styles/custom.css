@@ -249,6 +249,30 @@ h1, h2, h3, h4, h5, h6, .brand-font {
   scrollbar-color: rgba(139, 92, 246, 0.35) transparent;
 }
 
+/* Custom Sleek Horizontal Scrollbar for Suggestion Bar */
+.custom-horizontal-scroll::-webkit-scrollbar {
+  height: 5px;
+}
+
+.custom-horizontal-scroll::-webkit-scrollbar-track {
+  background: rgba(139, 92, 246, 0.08);
+  border-radius: 10px;
+}
+
+.custom-horizontal-scroll::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.45);
+  border-radius: 10px;
+}
+
+.custom-horizontal-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.85);
+}
+
+.custom-horizontal-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.45) rgba(139, 92, 246, 0.08);
+}
+
 /* Hide scrollbar completely for horizontal pill bars */
 .hide-scrollbar {
   scrollbar-width: none;

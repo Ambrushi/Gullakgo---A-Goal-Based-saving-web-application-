@@ -1,0 +1,300 @@
+{
+  "info": {
+    "_postman_id": "gullakgo-backend-api-v1",
+    "name": "Gullakgo Backend API Collection",
+    "description": "Complete REST API collection for Gullakgo Teen Savings Web Application (Express + Sequelize + Supabase)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "Authentication & Profile",
+      "item": [
+        {
+          "name": "User Signup",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Aarav Sharma\",\n  \"mobile\": \"9876543210\",\n  \"email\": \"aarav@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/signup",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "signup"]
+            }
+          }
+        },
+        {
+          "name": "User Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"9876543210\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Update Profile / Link Parent",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"parentLinked\": true,\n  \"parentName\": \"Rajesh Sharma (Dad)\",\n  \"parentEmail\": \"rajesh.sharma@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/profile/usr_1740000000000",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "profile", "usr_1740000000000"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Savings Goals",
+      "item": [
+        {
+          "name": "Get Goals",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/goals?userId=usr_1740000000000",
+              "host": ["{{baseUrl}}"],
+              "path": ["goals"],
+              "query": [
+                { "key": "userId", "value": "usr_1740000000000" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Goal",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"usr_1740000000000\",\n  \"title\": \"PlayStation 5 Digital Edition\",\n  \"category\": \"Product\",\n  \"icon\": \"bi-controller\",\n  \"targetAmount\": 45000,\n  \"targetDate\": \"2026-10-15\",\n  \"dailySavingRate\": 215,\n  \"lockIn\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/goals",
+              "host": ["{{baseUrl}}"],
+              "path": ["goals"]
+            }
+          }
+        },
+        {
+          "name": "Add Deposit Contribution to Goal",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"usr_1740000000000\",\n  \"amount\": 2000,\n  \"note\": \"Daily Pocket Money Top-up 🔥\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/goals/g_1740000000000/contributions",
+              "host": ["{{baseUrl}}"],
+              "path": ["goals", "g_1740000000000", "contributions"]
+            }
+          }
+        },
+        {
+          "name": "Update Goal",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"PlayStation 5 Pro Edition\",\n  \"targetAmount\": 48000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/goals/g_1740000000000",
+              "host": ["{{baseUrl}}"],
+              "path": ["goals", "g_1740000000000"]
+            }
+          }
+        },
+        {
+          "name": "Delete Goal",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/goals/g_1740000000000",
+              "host": ["{{baseUrl}}"],
+              "path": ["goals", "g_1740000000000"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Expenses",
+      "item": [
+        {
+          "name": "Get Expenses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/expenses?userId=usr_1740000000000",
+              "host": ["{{baseUrl}}"],
+              "path": ["expenses"],
+              "query": [
+                { "key": "userId", "value": "usr_1740000000000" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Expense",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"usr_1740000000000\",\n  \"title\": \"Boba Milk Tea & Fries\",\n  \"amount\": 220,\n  \"category\": \"Snacks & Drinks\",\n  \"icon\": \"bi-cup-straw\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/expenses",
+              "host": ["{{baseUrl}}"],
+              "path": ["expenses"]
+            }
+          }
+        },
+        {
+          "name": "Delete Expense",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/expenses/e_1740000000000",
+              "host": ["{{baseUrl}}"],
+              "path": ["expenses", "e_1740000000000"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments & Transactions",
+      "item": [
+        {
+          "name": "Get Payment History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments?userId=usr_1740000000000",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments"],
+              "query": [
+                { "key": "userId", "value": "usr_1740000000000" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Record Payment Transaction",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"usr_1740000000000\",\n  \"utr\": \"UPI/628491038472\",\n  \"type\": \"Subscription\",\n  \"description\": \"Weekly Saver Plan Upgrade\",\n  \"amount\": 49,\n  \"status\": \"SUCCESS\",\n  \"app\": \"Google Pay\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Subscriptions & AI Limits",
+      "item": [
+        {
+          "name": "Get Subscription Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/subscription?userId=usr_1740000000000",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscription"],
+              "query": [
+                { "key": "userId", "value": "usr_1740000000000" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upgrade Subscription Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"usr_1740000000000\",\n  \"planId\": \"weekly\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/subscription/upgrade",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscription", "upgrade"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
