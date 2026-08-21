@@ -31,26 +31,18 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Gullakgo Backend Express + Sequelize ORM Server is running 🔥' });
 });
 
-const listenOnPort = (portToTry: number) => {
-  const server = app.listen(portToTry, () => {
-    console.log(`🚀 Gullakgo Sequelize Express Server running on http://localhost:${portToTry}`);
-  });
-
-  server.on('error', (err: any) => {
-    if (err.code === 'EADDRINUSE') {
-      console.warn(`⚠️ Port ${portToTry} is in use. Trying port ${portToTry + 1}...`);
-      listenOnPort(portToTry + 1);
-    } else {
-      console.error('Server error:', err);
-    }
-  });
-};
-
 // Initialize DB and start server
 const startServer = async () => {
-  await connectDB();
-  await syncDatabase();
-  listenOnPort(PORT);
+  try {
+    await connectDB();
+    await syncDatabase();
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Gullakgo Sequelize Express Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
 };
 
 startServer();
